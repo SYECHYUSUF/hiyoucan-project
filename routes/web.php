@@ -6,6 +6,7 @@ use App\Http\Controllers\UserAddressController;
 use App\Http\Controllers\ShopController; // <--- PENTING: Import ShopController
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\WishlistController;
+use App\Http\Controllers\ReviewController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -36,6 +37,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/cart/{id}', [CartController::class, 'destroy'])->name('cart.destroy');
     
     Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
+    Route::post('/reviews/{product}', [ReviewController::class, 'store'])->name('reviews.store');
 
     // --- FITUR ALAMAT ---
     Route::post('/address', [UserAddressController::class, 'store'])->name('address.store');
