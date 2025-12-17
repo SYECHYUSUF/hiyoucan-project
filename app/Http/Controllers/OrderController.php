@@ -25,7 +25,7 @@ class OrderController extends Controller
         // Ambil alamat user
         $addresses = $user->addresses()->latest()->get();
 
-        return view('checkout.index', compact('cartItems', 'total', 'addresses'));
+        return view('checkout', compact('cartItems', 'total', 'addresses'));
     }
 
     public function processCheckout(Request $request)
