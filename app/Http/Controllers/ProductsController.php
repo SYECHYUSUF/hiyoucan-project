@@ -107,4 +107,6 @@ class ProductsController extends Controller
         $product->delete();
         return back()->with('success', 'Product deleted successfully!');
     }
+
+    
 }

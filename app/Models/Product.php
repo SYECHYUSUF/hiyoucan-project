@@ -58,4 +58,10 @@ class Product extends Model
 
         return asset('storage/' . $value);
     }
+
+    use HasFactory;
+    public function getRouteKeyName()
+    {
+        return 'slug';
+    }
 }
