@@ -97,6 +97,10 @@ return [
         'prefix_indexes' => true,
         'search_path' => 'laravel',
         'sslmode' => 'prefer',
+
+        'attributes' => [
+        PDO::ATTR_EMULATE_PREPARES => true,
+    ],
     ],
 
         'sqlsrv' => [
