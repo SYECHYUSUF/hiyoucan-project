@@ -111,12 +111,28 @@ class OrderController extends Controller
     /**
      * Dashboard Seller - Menampilkan daftar pesanan masuk
      */
-    public function sellerIndex()
-    {
-        // Mengambil semua order untuk ditampilkan di dashboard seller
-        $orders = Order::with(['user', 'items.product'])->latest()->get();
-        return view('dashboard.seller.home', compact('orders'));
-    }
+   // app/Http/Controllers/OrderController.php
+
+public function sellerIndex()
+{
+    // 1. Ambil semua data order untuk tabel
+    $orders = Order::with(['user', 'items.product'])->latest()->get();
+
+    // 2. Hitung statistik untuk dikirim ke view
+    $stats = [
+        // Total pendapatan dari order yang bukan 'cancelled'
+        'revenue' => Order::where('status', '!=', 'cancelled')->sum('total_price'),
+        
+        // Total item yang terjual (sum quantity dari tabel order_items)
+        'items_sold' => \App\Models\OrderItem::sum('quantity'),
+        
+        // Total produk aktif di toko
+        'total_products' => \App\Models\Product::count(),
+    ];
+
+    // 3. Kirimkan kedua variabel (orders dan stats) ke view
+    return view('dashboard.seller.home', compact('orders', 'stats'));
+}
 
     /**
      * Dashboard Seller - Memperbarui status pesanan
