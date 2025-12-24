@@ -143,9 +143,6 @@
                                                 <span class="font-bold text-gray-900 text-lg">{{ $address->recipient_name }}</span>
                                                 @if($loop->first)<span class="bg-green-100 text-green-700 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">Utama</span>@endif
                                             </div>
-                                            <div class="h-6 w-6 rounded-full border-2 border-gray-300 peer-checked:border-hiyoucan-600 peer-checked:bg-hiyoucan-600 flex items-center justify-center">
-                                                <div class="h-2.5 w-2.5 rounded-full bg-white opacity-0 peer-checked:opacity-100"></div>
-                                            </div>
                                         </div>
                                         <p class="text-gray-600 text-sm">{{ $address->phone_number }}</p>
                                         <p class="text-gray-500 text-sm mt-1">{{ $address->address_detail }}, {{ $address->city }}, {{ $address->province }}</p>

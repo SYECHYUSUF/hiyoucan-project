@@ -9,26 +9,21 @@ class UserAddress extends Model
 {
     use HasFactory;
 
-    // Menentukan nama tabel (opsional jika nama tabel jamak, misal: user_addresses)
     protected $table = 'user_addresses';
 
-    // Kolom mana saja yang boleh diisi secara massal (mass assignment)
-    // Pastikan kolom ini ada di database-mu nanti
+    // Sesuaikan kolom ini dengan database/migration Anda
     protected $fillable = [
         'user_id',
-        'recipient_name', // Nama penerima paket
-        'address_line',   // Alamat jalan lengkap
-        'city',           // Kota
-        'state',          // Provinsi
-        'postal_code',    // Kode Pos
-        'phone',          // Nomor Telepon penerima
-        'is_primary'      // Penanda alamat utama (boolean: 0 atau 1)
+        'recipient_name',
+        'phone_number',   // Ubah dari 'phone'
+        'province',       // Ubah dari 'state'
+        'city',
+        'district',       // Tambahkan kolom ini
+        'postal_code',
+        'address_detail', // Ubah dari 'address_line'
+        'is_primary'
     ];
 
-    /**
-     * Relasi ke User
-     * Setiap alamat dimiliki oleh satu user.
-     */
     public function user()
     {
         return $this->belongsTo(User::class);

@@ -11,6 +11,18 @@ use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
+    /**
+     * Menampilkan riwayat pesanan untuk Customer
+     */
+    public function index()
+    {
+        $orders = Auth::user()->orders()->with('items.product')->latest()->get();
+        return view('orders.index', compact('orders'));
+    }
+
+    /**
+     * Menampilkan halaman checkout
+     */
     public function indexCheckout()
     {
         $user = Auth::user();
@@ -21,22 +33,20 @@ class OrderController extends Controller
         }
 
         $total = $cartItems->sum(fn($item) => $item->product->price * $item->quantity);
-        
-        // Ambil alamat user
         $addresses = $user->addresses()->latest()->get();
 
         return view('checkout', compact('cartItems', 'total', 'addresses'));
     }
 
+    /**
+     * Memproses pesanan (Checkout)
+     */
     public function processCheckout(Request $request)
     {
-        // 1. Validasi Input (Updated)
         $request->validate([
             'selected_address_id' => 'required|exists:user_addresses,id',
             'shipping_service'    => 'required|in:jnt,jne,spx',
             'payment_method'      => 'required|in:cod,qris,transfer',
-            
-            // Validasi file bukti bayar (Sesuai name di blade: payment_proof_qris & payment_proof_transfer)
             'payment_proof_qris'     => 'required_if:payment_method,qris|image|max:2048',
             'payment_proof_transfer' => 'required_if:payment_method,transfer|image|max:2048',
         ]);
@@ -46,7 +56,6 @@ class OrderController extends Controller
 
         if ($cartItems->isEmpty()) return redirect()->route('cart.index');
 
-        // 2. Hitung Ongkir Manual (Simulasi)
         $subtotal = $cartItems->sum(fn($item) => $item->product->price * $item->quantity);
         $shippingCost = match($request->shipping_service) {
             'jnt' => 18000,
@@ -56,26 +65,13 @@ class OrderController extends Controller
         };
         $grandTotal = $subtotal + $shippingCost;
 
-        // 3. Ambil Data Alamat
         $addr = UserAddress::where('user_id', $user->id)->findOrFail($request->selected_address_id);
         
-        // Buat Snapshot Alamat (String lengkap agar aman jika user hapus alamat nanti)
-        // Perhatikan penggunaan kolom baru: phone_number, address_detail, district
         $snapshot  = "PENERIMA: {$addr->recipient_name} ({$addr->phone_number})\n";
         $snapshot .= "ALAMAT: {$addr->address_detail}, Kec. {$addr->district}\n";
         $snapshot .= "KOTA/PROV: {$addr->city}, {$addr->province} ({$addr->postal_code})\n";
         $snapshot .= "KURIR: " . strtoupper($request->shipping_service);
 
-        // Tambahan Info Pembayaran ke Snapshot
-        if ($request->payment_method === 'transfer') {
-        $snapshot .= "\n\nPEMBAYARAN: TRANSFER BANK (" . ($request->selected_bank ?? 'MANUAL') . ")";
-        } elseif ($request->payment_method === 'qris') {
-            $snapshot .= "\n\nPEMBAYARAN: QRIS";
-        } else {
-            $snapshot .= "\n\nPEMBAYARAN: COD";
-        }
-
-        // 4. Proses Upload Bukti Bayar
         $proofPath = null;
         if ($request->hasFile('payment_proof_qris')) {
             $proofPath = $request->file('payment_proof_qris')->store('payment_proofs', 'public');
@@ -83,14 +79,12 @@ class OrderController extends Controller
             $proofPath = $request->file('payment_proof_transfer')->store('payment_proofs', 'public');
         }
 
-        // 5. Simpan ke Database (Transaction)
         DB::transaction(function () use ($user, $cartItems, $grandTotal, $shippingCost, $request, $proofPath, $snapshot, $addr) {
-            
             $order = Order::create([
                 'user_id' => $user->id,
                 'total_price' => $grandTotal,
-                'address' => $addr->city, // Kota tujuan untuk report sederhana
-                'shipping_address_snapshot' => $snapshot, // Alamat lengkap text
+                'address' => $addr->city,
+                'shipping_address_snapshot' => $snapshot,
                 'payment_method' => $request->payment_method,
                 'payment_proof' => $proofPath,
                 'status' => ($request->payment_method === 'cod') ? 'pending' : 'pending_payment',
@@ -104,16 +98,38 @@ class OrderController extends Controller
                     'product_id' => $item->product_id,
                     'quantity' => $item->quantity,
                     'price' => $item->product->price,
-                    'status' => 'pending',
                 ]);
-                // Kurangi stok produk
                 $item->product->decrement('stock', $item->quantity);
             }
 
-            // Kosongkan keranjang
             $user->carts()->delete();
         });
 
         return redirect()->route('orders.index')->with('success', 'Pesanan berhasil dibuat!');
+    }
+
+    /**
+     * Dashboard Seller - Menampilkan daftar pesanan masuk
+     */
+    public function sellerIndex()
+    {
+        // Mengambil semua order untuk ditampilkan di dashboard seller
+        $orders = Order::with(['user', 'items.product'])->latest()->get();
+        return view('dashboard.seller.home', compact('orders'));
+    }
+
+    /**
+     * Dashboard Seller - Memperbarui status pesanan
+     */
+    public function updateStatus(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required'
+        ]);
+
+        $order = Order::findOrFail($id);
+        $order->update(['status' => $request->status]);
+
+        return back()->with('success', 'Status pesanan berhasil diperbarui!');
     }
 }
